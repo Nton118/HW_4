@@ -1,0 +1,18 @@
+html {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+body {
+  flex: 1;
+  background-image: linear-gradient(180deg, #903d3d, #5653ee 100px, #339c68);
+}
+
+.container {
+  max-width: 960px;
+}
+
+textarea {
+  height: 250px;
+}
