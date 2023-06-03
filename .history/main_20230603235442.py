@@ -105,7 +105,7 @@ if __name__ == "__main__":
         stor_path = dir_path / "storage"
         stor_path.mkdir(parents=True, exist_ok=True)
         data_file = open("storage/data.json", "x", encoding="UTF-8")
-    data_file = open("storage/data.json", "w+", encoding="UTF-8")
+    data_file = open("storage/data.json", "a+", encoding="UTF-8")
     udp_server = threading.Thread(target=run_udp, args=(HOST, UDP_PORT, data_file))
     http_server = threading.Thread(target=run_http, args=(HOST, HTTP_PORT))
     udp_server.start()

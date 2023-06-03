@@ -82,16 +82,11 @@ def run_udp(ip, port, data_file):
     try:
         while True:
             data, address = sock.recvfrom(1024)
-            data_dict = json.loads(data.decode())
-            record = {str(datetime.now()): data_dict}
-            data_file.seek(0)
-            try:
-                messages = json.load(data_file)
-            except json.JSONDecodeError:
-                messages = {}
+            dict = json.loads(data.decode())
+            record = {datetime.now(): dict}
+            messages = json.load(data_file)
             messages.update(record)
             json.dump(messages, data_file, ensure_ascii=False)
-            data_file.seek(0)
 
     except KeyboardInterrupt:
         print(f"Destroy server")

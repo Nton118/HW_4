@@ -3,6 +3,7 @@ from datetime import datetime
 import json
 import mimetypes
 import pathlib
+import pickle
 import socket
 import threading
 import urllib.parse
@@ -27,7 +28,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                 self.send_html_file("error.html", 404)
 
     def send_to_socket(self, data: dict):
-        bytes = json.dumps(data).encode()
+        bytes = pickle.dumps(data)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         server = HOST, UDP_PORT
         sock.sendto(bytes, server)
@@ -82,16 +83,11 @@ def run_udp(ip, port, data_file):
     try:
         while True:
             data, address = sock.recvfrom(1024)
-            data_dict = json.loads(data.decode())
-            record = {str(datetime.now()): data_dict}
-            data_file.seek(0)
-            try:
-                messages = json.load(data_file)
-            except json.JSONDecodeError:
-                messages = {}
+            dict = pickle.load(data)
+            record = {datetime.now(): dict}
+            messages = json.load(data_file)
             messages.update(record)
             json.dump(messages, data_file, ensure_ascii=False)
-            data_file.seek(0)
 
     except KeyboardInterrupt:
         print(f"Destroy server")
@@ -103,9 +99,9 @@ if __name__ == "__main__":
     dir_path = pathlib.Path(".")
     if not pathlib.Path().joinpath("storage/data.json").exists():
         stor_path = dir_path / "storage"
-        stor_path.mkdir(parents=True, exist_ok=True)
+        dir_path.mkdir(parents=True, exist_ok=True)
         data_file = open("storage/data.json", "x", encoding="UTF-8")
-    data_file = open("storage/data.json", "w+", encoding="UTF-8")
+    data_file = open("storage/data.json", "w", encoding="UTF-8")
     udp_server = threading.Thread(target=run_udp, args=(HOST, UDP_PORT, data_file))
     http_server = threading.Thread(target=run_http, args=(HOST, HTTP_PORT))
     udp_server.start()

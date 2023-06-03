@@ -82,16 +82,11 @@ def run_udp(ip, port, data_file):
     try:
         while True:
             data, address = sock.recvfrom(1024)
-            data_dict = json.loads(data.decode())
-            record = {str(datetime.now()): data_dict}
-            data_file.seek(0)
-            try:
-                messages = json.load(data_file)
-            except json.JSONDecodeError:
-                messages = {}
+            dict = json.loads(data.decode())
+            record = {str(datetime.now()): dict}
+            messages = json.load(data_file)
             messages.update(record)
             json.dump(messages, data_file, ensure_ascii=False)
-            data_file.seek(0)
 
     except KeyboardInterrupt:
         print(f"Destroy server")
@@ -105,7 +100,7 @@ if __name__ == "__main__":
         stor_path = dir_path / "storage"
         stor_path.mkdir(parents=True, exist_ok=True)
         data_file = open("storage/data.json", "x", encoding="UTF-8")
-    data_file = open("storage/data.json", "w+", encoding="UTF-8")
+    data_file = open("storage/data.json", "a+", encoding="UTF-8")
     udp_server = threading.Thread(target=run_udp, args=(HOST, UDP_PORT, data_file))
     http_server = threading.Thread(target=run_http, args=(HOST, HTTP_PORT))
     udp_server.start()
