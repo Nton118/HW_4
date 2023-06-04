@@ -10,8 +10,6 @@ import urllib.parse
 HOST = "127.0.0.1"
 UDP_PORT = 5000
 HTTP_PORT = 3000
-exit_flag = False
-lock = threading.Lock()
 
 
 class HttpHandler(BaseHTTPRequestHandler):
@@ -70,9 +68,10 @@ class HttpHandler(BaseHTTPRequestHandler):
 def run_http(ip, port):
     server_address = (ip, port)
     http = HTTPServer(server_address, HttpHandler)
-    while not exit_flag:
-        http.handle_request()
-    http.server_close()
+    try:
+        http.serve_forever()
+    except KeyboardInterrupt:
+        http.server_close()
 
 
 def run_udp(ip, port, data_file):
@@ -80,21 +79,24 @@ def run_udp(ip, port, data_file):
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server = ip, port
     sock.bind(server)
-    while not exit_flag:
-        data, address = sock.recvfrom(1024)
-        data_dict = json.loads(data.decode())
-        record = {str(datetime.now()): data_dict}
-        with lock:
+    try:
+        while True:
+            data, address = sock.recvfrom(1024)
+            data_dict = json.loads(data.decode())
+            record = {str(datetime.now()): data_dict}
             data_file.seek(0)
             try:
                 messages = json.load(data_file)
             except json.JSONDecodeError:
                 messages = {}
             messages.update(record)
-            data_file.seek(0)
             json.dump(messages, data_file, ensure_ascii=False)
-            data_file.truncate()
-    sock.close()
+            data_file.seek(0)
+
+    except KeyboardInterrupt:
+        print("Destroy server")
+    finally:
+        sock.close()
 
 
 if __name__ == "__main__":
@@ -103,16 +105,11 @@ if __name__ == "__main__":
         stor_path = dir_path / "storage"
         stor_path.mkdir(parents=True, exist_ok=True)
         data_file = open("storage/data.json", "x", encoding="UTF-8")
-    data_file = open("storage/data.json", "r+", encoding="UTF-8")
+    data_file = open("storage/data.json", "w+", encoding="UTF-8")
     udp_server = threading.Thread(target=run_udp, args=(HOST, UDP_PORT, data_file))
     http_server = threading.Thread(target=run_http, args=(HOST, HTTP_PORT))
     udp_server.start()
     http_server.start()
-    try:
-        while True:
-            pass
-    except KeyboardInterrupt:
-        exit_flag = True
-        udp_server.join()
-        http_server.join()
-        data_file.close()
+    udp_server.join()
+    http_server.join()
+    data_file.close()
